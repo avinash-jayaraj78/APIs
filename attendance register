@@ -1,0 +1,43 @@
+var dataStorageId = "YOUR_DATA_STORAGE_ID";
+var recordSheetName = "YOUR_RECORD_SHEET_NAME";
+
+function doGet(e) {
+  var spreadsheet = SpreadsheetApp.openById(dataStorageId);
+  var sheet = spreadsheet.getSheetByName(recordSheetName);
+  var recordIdentifier = e.parameter.ID;
+  var recordName = e.parameter.NAME;
+  var statusIndicator = e.parameter.PRESENCE;
+  var latitude = e.parameter.lats;
+  var longitude = e.parameter.lon;
+  var mapLink = "https://www.google.com/maps/place/" + latitude + "," + longitude;
+
+  var headers = sheet.getDataRange().getValues()[0];
+  var dateColIndex = headers.indexOf("DATE") + 1;
+  var timeColIndex = headers.indexOf("TIME") + 1;
+
+  if (dateColIndex === 0 || timeColIndex === 0) {
+    return ContentService.createTextOutput("Required columns not found.").setMimeType(ContentService.MimeType.TEXT);
+  }
+
+  var now = new Date();
+
+  var formattedCurrentDate = Utilities.formatDate(now, "Asia/Kolkata", "dd-MM-yyyy");
+
+  var formattedCurrentTime = Utilities.formatDate(now, "Asia/Kolkata", "hh:mm:ss a");
+
+  var newRowData = [recordIdentifier, recordName, statusIndicator, mapLink];
+
+  while (newRowData.length < Math.max(dateColIndex, timeColIndex) - 1) {
+    newRowData.push("");
+  }
+
+  newRowData[dateColIndex - 1] = formattedCurrentDate;
+  newRowData[timeColIndex - 1] = formattedCurrentTime;
+
+  sheet.appendRow(newRowData);
+
+  var lastInsertedRow = sheet.getLastRow();
+  sheet.getRange(lastInsertedRow, timeColIndex).setNumberFormat('@STRING@');
+
+  return ContentService.createTextOutput("Record added successfully!").setMimeType(ContentService.MimeType.TEXT);
+}
