@@ -1,0 +1,35 @@
+function doGet(e) {
+  try {
+    var sheetUrl = e.parameter.sheetUrl;
+
+    if (!sheetUrl) {
+      return ContentService.createTextOutput("Please provide a sheetUrl parameter.").setMimeType(ContentService.MimeType.TEXT);
+    }
+
+    var ss = SpreadsheetApp.openByUrl(sheetUrl);
+    var sheet = ss.getActiveSheet();
+    var data = sheet.getDataRange().getValues();
+
+    var csvData = convertToCSV(data);
+    var blob = Utilities.newBlob(csvData, "text/csv", sheet.getName() + ".csv");
+
+    return ContentService.createTextOutput(blob.getDataAsString())
+      .setMimeType(ContentService.MimeType.CSV)
+      .downloadAsFile(sheet.getName() + ".csv");
+
+  } catch (error) {
+    return ContentService.createTextOutput("Error: " + error.toString()).setMimeType(ContentService.MimeType.TEXT);
+  }
+}
+
+function convertToCSV(data) {
+  var csv = "";
+  for (var i = 0; i < data.length; i++) {
+    for (var j = 0; j < data[i].length; j++) {
+      if (j > 0) csv += ",";
+      csv += data[i][j];
+    }
+    csv += "\n";
+  }
+  return csv;
+}
