@@ -1,0 +1,52 @@
+var dataRepositoryId = "YOUR_DATA_REPOSITORY_ID";
+var recordsTabName = "YOUR_RECORDS_TAB_NAME";
+
+function doGet(e) {
+  var recordIdentifier = e.parameter.ID;
+  var recordDate = e.parameter.DATE;
+  var recordStatus = e.parameter.PRESENCE;
+
+  var spreadsheetInstance;
+  try {
+    spreadsheetInstance = SpreadsheetApp.openById(dataRepositoryId);
+  } catch (error) {
+    return ContentService.createTextOutput("Error: Data repository not accessible.").setMimeType(ContentService.MimeType.TEXT);
+  }
+
+  var sheetTab = spreadsheetInstance.getSheetByName(recordsTabName);
+  if (!sheetTab) {
+    return ContentService.createTextOutput("Error: Specified tab not found.").setMimeType(ContentService.MimeType.TEXT);
+  }
+
+  if (!recordIdentifier || !recordDate || !recordStatus) {
+    return ContentService.createTextOutput("Error: Insufficient parameters provided.").setMimeType(ContentService.MimeType.TEXT);
+  }
+
+  var allSheetData = sheetTab.getDataRange().getValues();
+  if (!allSheetData || allSheetData.length <= 1) {
+    return ContentService.createTextOutput("Error: No records found in the tab.").setMimeType(ContentService.MimeType.TEXT);
+  }
+
+  var headerRow = allSheetData[0];
+  var identifierColumn = headerRow.indexOf("ID");
+  var statusColumn = headerRow.indexOf("PRESENCE");
+  var locationInfoColumn = headerRow.indexOf("LOCATION");
+  var dateColumn = headerRow.indexOf("DATE");
+
+  if (identifierColumn === -1 || statusColumn === -1 || locationInfoColumn === -1 || dateColumn === -1) {
+    return ContentService.createTextOutput("Error: One or more required columns are missing.").setMimeType(ContentService.MimeType.TEXT);
+  }
+
+  for (var i = 1; i < allSheetData.length; i++) {
+    var currentRow = allSheetData[i];
+    if (String(currentRow[identifierColumn]).toLowerCase() === String(recordIdentifier).toLowerCase() &&
+        String(currentRow[dateColumn]).trim() === String(recordDate).trim() &&
+        String(currentRow[statusColumn]).toLowerCase() === String(recordStatus).toLowerCase()) {
+
+      var foundLocation = currentRow[locationInfoColumn];
+      return ContentService.createTextOutput(foundLocation).setMimeType(ContentService.MimeType.TEXT);
+    }
+  }
+
+  return ContentService.createTextOutput("No matching record found.").setMimeType(ContentService.MimeType.TEXT);
+}
