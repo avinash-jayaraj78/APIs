@@ -1,0 +1,37 @@
+function doGet(e) {
+  try {
+    var identifierParam = e.parameter.ID;
+    var primaryDataSheetId = "YOUR_PRIMARY_DATA_SHEET_ID";
+    var temporaryOutputSheetId = "YOUR_TEMPORARY_OUTPUT_SHEET_ID";
+
+    if (!identifierParam) {
+      return ContentService.createTextOutput("Missing identifier parameter.").setMimeType(ContentService.MimeType.TEXT);
+    }
+
+    var primarySpreadsheet = SpreadsheetApp.openById(primaryDataSheetId);
+    var primarySheet = primarySpreadsheet.getActiveSheet();
+    var allData = primarySheet.getDataRange().getValues();
+    var headerRow = allData[0];
+
+    var filteredRecords = allData.filter(function(row, index) {
+      if (index === 0) return true;
+      return row[0] === identifierParam;
+    });
+
+    if (filteredRecords.length <= 1) {
+      return ContentService.createTextOutput("Record not found or no associated data.").setMimeType(ContentService.MimeType.TEXT);
+    }
+
+    var outputSpreadsheet = SpreadsheetApp.openById(temporaryOutputSheetId);
+    var outputSheet = outputSpreadsheet.getActiveSheet();
+
+    outputSheet.clearContents();
+
+    outputSheet.getRange(1, 1, filteredRecords.length, filteredRecords[0].length).setValues(filteredRecords);
+
+    return ContentService.createTextOutput(outputSpreadsheet.getUrl()).setMimeType(ContentService.MimeType.TEXT);
+
+  } catch (error) {
+    return ContentService.createTextOutput("An error occurred: " + error.toString()).setMimeType(ContentService.MimeType.TEXT);
+  }
+}
